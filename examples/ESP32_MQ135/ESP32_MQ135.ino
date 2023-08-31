@@ -18,11 +18,12 @@
 #define SERVICE_UUID "43dc60ce-42a1-11ee-be56-0242ac120002"
 
 #define CARBON_MONOXIDE_CHAR_UUID "4e771fe2-42a1-11ee-be56-0242ac120000"
-#define CARBON_DIOXIDE_CHAR_UUID  "4e771fe2-42a1-11ee-be56-0242ac120001"
-#define ALCOHOL_CHAR_UUID         "4e771fe2-42a1-11ee-be56-0242ac120002"
-#define ACETONE_CHAR_UUID         "4e771fe2-42a1-11ee-be56-0242ac120003"
-#define TOLUEN_CHAR_UUID          "4e771fe2-42a1-11ee-be56-0242ac120004"
-#define AMMONIUM_CHAR_UUID        "4e771fe2-42a1-11ee-be56-0242ac120005"
+#define CARBON_DIOXIDE_CHAR_UUID  "4e771fe3-42a2-11ee-be57-0242ac120001"
+#define ALCOHOL_CHAR_UUID         "4e771fe4-42a3-11ee-be56-0242ac120002"
+#define ACETONE_CHAR_UUID         "4e771fe5-42a4-11ee-be57-0242ac120003"
+#define TOLUEN_CHAR_UUID          "4e771fe6-42a5-11ee-be56-0242ac120004"
+#define AMMONIUM_CHAR_UUID        "4e771fe7-42a6-11ee-be58-0242ac120005"
+#define PERCENTAGE_CHAR_UUID      "4e771fe8-42a7-11ee-be56-0242ac120006"
 
 #define CARBON_MONOXIDE_DESC_UUID 0x2901
 #define CARBON_DIOXIDE_DESC_UUID  0x2902
@@ -30,6 +31,7 @@
 #define ACETONE_DESC_UUID         0x2904
 #define TOLUEN_DESC_UUID          0x2905
 #define AMMONIUM_DESC_UUID        0x2906
+#define PERCENTAGE_DESC_UUID      0x2907
 
 #define DEVICE_NAME "Smoke Detector"
 
@@ -45,6 +47,7 @@ BLECharacteristic* alcoholChar = NULL;
 BLECharacteristic* acetoneChar = NULL;
 BLECharacteristic* toluenChar = NULL;
 BLECharacteristic* amoniumChar = NULL;
+BLECharacteristic* percentageChar = NULL;
 
 BLEDescriptor *pDescr;
 BLE2902 *pBLE2902;
@@ -165,8 +168,19 @@ void setup() {
   pBLE2902->setNotifications(true);
   amoniumChar->addDescriptor(pBLE2902);
 
-  // this text can be a sensor reading, or the state of a lamp, for example.
-  //pCharacteristic->setValue("How can I help you?");
+ percentageChar = pService->createCharacteristic(
+          PERCENTAGE_CHAR_UUID,
+          BLECharacteristic::PROPERTY_NOTIFY |
+          BLECharacteristic::PROPERTY_READ |
+          //BLECharacteristic::PROPERTY_WRITE |
+          BLECharacteristic::PROPERTY_INDICATE
+  );
+  pDescr = new BLEDescriptor((uint16_t)PERCENTAGE_DESC_UUID);
+  pDescr->setValue("Percentage from 0 to 99");
+  percentageChar->addDescriptor(pDescr);
+  pBLE2902 = new BLE2902();
+  pBLE2902->setNotifications(true);
+  percentageChar->addDescriptor(pBLE2902);
   
   // Start the service
   pService->start();
@@ -237,6 +251,8 @@ void loop() {
   mq135_sensor.setGas(ACETONE);
   float acetone = mq135_sensor.readSensorInPPM();
 
+  float percentage = mq135_sensor.getSensedPercentage();
+
     // notify changed value
     if (deviceConnected) {
       
@@ -258,6 +274,10 @@ void loop() {
 
         amoniumChar->setValue(ammonium);
         amoniumChar->notify();
+
+        percentageChar->setValue(percentage);
+        percentageChar->notify();
+
         delay(1000);
     }
     // disconnecting
