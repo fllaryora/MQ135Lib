@@ -12,7 +12,8 @@ void MQUnifiedsensor::init(){
   pinMode(_pin, INPUT);
 }
 
-
+//Setting Exponential regression (a, b) values 
+//https://www.codrey.com/electronic-circuits/how-to-use-mq-135-gas-sensor/
 void MQUnifiedsensor::setGas(int gas) {
 
   switch(gas) {
@@ -47,7 +48,10 @@ void MQUnifiedsensor::setGas(int gas) {
    }
 }
 
-
+//https://github.com/miguel5612/MQSensorsLib
+//http://davidegironi.blogspot.com/2017/05/mq-gas-sensor-correlation-function.html
+//https://www.codrey.com/electronic-circuits/how-to-use-mq-135-gas-sensor/#google_vignette
+//Exponential regression mode
 float MQUnifiedsensor::readSensorInPPM( float correctionFactor) {
   float ratio = getResistenceInGas() / this->_resistenceOfSensorInCleanAir;
   ratio += correctionFactor;
