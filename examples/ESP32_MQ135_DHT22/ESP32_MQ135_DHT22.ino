@@ -230,10 +230,18 @@ void loop() {
   digitalWrite(2, HIGH); // Blue LED on
 
   // if you want to apply corelation factor, you will add in this program the temperature and humidity sensor
-  sensors_event_t event;
-  dht.temperature().getEvent(&event);
+  sensors_event_t eventTemperature;
+  sensors_event_t eventHumidity;
+  dht.temperature().getEvent(&eventTemperature);
+  dht.humidity().getEvent(&eventHumidity);
   float corelationFactor = 0;
-   if (!isnan(event.temperature) && !isnan(event.relative_humidity)) corelationFactor = mq135_sensor.getCorrectionFactor(event.temperature, event.relative_humidity);
+   if (!isnan(eventTemperature.temperature) && !isnan(eventHumidity.relative_humidity)){
+      corelationFactor = mq135_sensor.getCorrectionFactor(
+        eventTemperature.temperature,
+        eventHumidity.relative_humidity
+      );
+   }
+    
 
   //Carbon monoxide( CO ) 
   mq135_sensor.setGas(CARBON_MONOXIDE);
@@ -288,14 +296,20 @@ void loop() {
     arrayCharacteristics[PERCENTAGE_INDEX]->setValue(percentage);
     arrayCharacteristics[PERCENTAGE_INDEX]->notify();
 
-    arrayCharacteristics[HUMIDITY_INDEX]->setValue(event.relative_humidity);
+    arrayCharacteristics[HUMIDITY_INDEX]->setValue(eventHumidity.relative_humidity);
     arrayCharacteristics[HUMIDITY_INDEX]->notify();
 
-    arrayCharacteristics[TEMPERATURE_INDEX]->setValue(event.temperature);
+    arrayCharacteristics[TEMPERATURE_INDEX]->setValue(eventTemperature.temperature);
     arrayCharacteristics[TEMPERATURE_INDEX]->notify();
 
     Serial.println("percentage");
     Serial.println(percentage);
+
+    Serial.println("temperature");
+    Serial.println(eventTemperature.temperature);
+
+    Serial.println("humidity");
+    Serial.println(eventHumidity.relative_humidity);
     delay(500);
   }
   // disconnecting
