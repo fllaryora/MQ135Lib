@@ -34,7 +34,7 @@
 #define BLE_UUID_ENVIRONMENTAL_SENSING_SERVICE    "181A"
 
 #define CARBON_MONOXIDE_CHRC_UUID "2BD0"//"43dc60ce-42b1-11ee-be56-0242ac120001"
-#define CARBON_DIOXIDE_CHRC_UUID  "2BD2"//"43dc60ce-42b2-11ee-be56-0242ac120001"
+#define CARBON_DIOXIDE_CHRC_UUID  "43dc60ce-42b2-11ee-be56-0242ac120001"
 #define ALCOHOL_CHRC_UUID         "43dc60ce-42b3-11ee-be56-0242ac120001"
 #define ACETONE_CHRC_UUID         "43dc60ce-42b4-11ee-be56-0242ac120001"
 #define TOLUENE_CHRC_UUID         "43dc60ce-42b5-11ee-be56-0242ac120001"
@@ -72,10 +72,10 @@ BLEServer* pServer = NULL;
 #define TEMPERATURE_INDEX 8
 
 //BLECharacteristic* percentageChar = NULL;
-BLECharacteristic* arrayCharacteristics [7];
+BLECharacteristic* arrayCharacteristics [9];
  
 
-BLEService* serviceList [4];
+BLEService* serviceList [5];
 //BLEDescriptor *pDescr;
 
 bool deviceConnected = false;
