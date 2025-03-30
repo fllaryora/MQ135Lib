@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Web BLE App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="">
+</head>
+<body>
+  <h1>Estación meteorologica</h1>
+  <button id="connectBleButton">Conectar al dispositivo</button>
+  <button id="disconnectBleButton">Desconectar al dispositivo</button>
+  <p>Estado de conexión: <strong><span id="bleState" style="color:#d13a30;">Desconectado</span></strong></p>
+  <h2>Valores que llegarón:</h2>
+  <p>Temperatura: <span id="temperatureContainer">NaN</span> °C</p>
+  <p>Humedad: <span id="humidityContainer">NaN</span> %</p>
+  <p>Calidad del aire: <span id="airQualityContainer">NaN</span> %</p>
+  <p>Dioxido de Carbono: <span id="co2Container">NaN</span> partes por millon</p>
+  <p>Monoxido de Carbono: <span id="coContainer">NaN</span> partes por millon</p>
+  <p>Ultima Lectura: <span id="timestamp"></span></p>
+ 
+
+</body>
+<script>
+    // DOM Elements
+    const connectButton = document.getElementById('connectBleButton');
+    const disconnectButton = document.getElementById('disconnectBleButton');
+    
+    const retrievedTemperatureValue = document.getElementById('temperatureContainer');
+    const retrievedHumidityValue = document.getElementById('humidityContainer');
+    const retrievedAirQualityValue = document.getElementById('airQualityContainer');
+    const retrievedCoValue = document.getElementById('co2Container');
+    const retrievedCo2Value = document.getElementById('coContainer');
+
+    const bleStateContainer = document.getElementById('bleState');
+    const timestampContainer = document.getElementById('timestamp');
+
+    //Define BLE Device Specs
+    var deviceName ='Air Quality Detector';
+
+    var bleServiceHumidityTemperature = 0x181A;
+    var bleServiceAir = '43dc60ce-42a4-11ee-be56-0242ac120001';
+    var bleServiceCO = '43dc60ce-42a1-11ee-be56-0242ac120001';
+
+    var uuidTemperature = '00002a6e-0000-1000-8000-00805f9b34fb';
+    var uuidHumidity = '00002a6f-0000-1000-8000-00805f9b34fb';
+    var uuidAirQuality = '43dc60ce-42b7-11ee-be56-0242ac120001';
+    var uuidCo = 0x2BD0;
+    var uuidCo2 = '43dc60ce-42b2-11ee-be56-0242ac120001';
+
+    //Global Variables to Handle Bluetooth
+    var bleServer;
+    
+    var bleServiceHumidityTemperatureFound;
+    var bleServiceAirFound;
+    var bleServiceCoFound;
+
+    var sensorTemperatureCharacteristicFound;
+    var sensorHumidityCharacteristicFound;
+    var sensorAirQualityCharacteristicFound;
+    var sensorCoCharacteristicFound;
+    var sensorCo2CharacteristicFound;
+
+    // Connect Button (search for BLE Devices only if BLE is available)
+    connectButton.addEventListener('click', (event) => {
+        if (isWebBluetoothEnabled()){
+            connectToDevice();
+        }
+    });
+
+    // Disconnect Button
+    disconnectButton.addEventListener('click', disconnectDevice);
+
+    // Check if BLE is available in your Browser
+    function isWebBluetoothEnabled() {
+        if (!navigator.bluetooth) {
+            console.log("Web Bluetooth API is not available in this browser!");
+            bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser!";
+            return false
+        }
+        console.log('Web Bluetooth API supported in this browser.');
+        return true
+    }
+
+
+    async function connectToDevice() {
+        try {
+            console.log('Initializing Bluetooth...');
+            
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ name: deviceName }],
+                optionalServices: [bleServiceHumidityTemperature, bleServiceAir, bleServiceCO]
+            });
+            
+            console.log('Device Selected:', device.name);
+            bleStateContainer.innerHTML = `Conectado al dispositivo: ${device.name}`;
+            bleStateContainer.style.color = "#24af37";
+            
+            device.addEventListener('gattservicedisconnected', onDisconnected);
+            const gattServer = await device.gatt.connect();
+            
+            console.log("Connected to GATT Server");
+            
+            bleServer = gattServer;
+
+            const serviceHumidityTemperature = await bleServer.getPrimaryService(bleServiceHumidityTemperature);
+            console.log("Service discovered:", serviceHumidityTemperature.uuid);
+            bleServiceHumidityTemperatureFound = serviceHumidityTemperature;
+
+            const serviceAir = await bleServer.getPrimaryService(bleServiceAir);
+            console.log("Service discovered:", serviceAir.uuid);
+            bleServiceAirFound = serviceAir;
+
+
+            const serviceCo = await bleServer.getPrimaryService(bleServiceCO);
+            console.log("Service discovered:", bleServiceCO.uuid);
+            bleServiceCoFound = bleServiceCO;
+
+
+            const characteristicTemperature = await serviceHumidityTemperature.getCharacteristic(uuidTemperature);
+            console.log("Characteristic discovered:", characteristicTemperature.uuid);
+            sensorTemperatureCharacteristicFound = characteristicTemperature;
+            
+            const characteristicHumidity = await serviceHumidityTemperature.getCharacteristic(uuidHumidity);
+            console.log("Characteristic discovered:", characteristicTemperature.uuid);
+            sensorHumidityCharacteristicFound = characteristicHumidity;
+
+            const characteristicAirQuality = await serviceAir.getCharacteristic(uuidAirQuality);
+            console.log("Characteristic discovered:", characteristicAirQuality.uuid);
+            sensorAirQualityCharacteristicFound = characteristicAirQuality;
+
+
+            const characteristicCo = await serviceCo.getCharacteristic(uuidCo);
+            console.log("Characteristic discovered:", characteristicAirQuality.uuid);
+            sensorCoCharacteristicFound = characteristicCo;
+
+            const characteristicC02 = await serviceCo.getCharacteristic(uuidCo2);
+            console.log("Characteristic discovered:", characteristicAirQuality.uuid);
+            sensorCo2CharacteristicFound = characteristicC02;
+
+
+            characteristicTemperature.addEventListener('characteristicvaluechanged', handleTemperatureCharacteristicChange);
+            characteristicHumidity.addEventListener('characteristicvaluechanged', handleHumidityCharacteristicChange);
+            characteristicAirQuality.addEventListener('characteristicvaluechanged', handleAirQualityCharacteristicChange);
+            sensorCoCharacteristicFound.addEventListener('characteristicvaluechanged', handleCoCharacteristicChange);
+            sensorCo2CharacteristicFound.addEventListener('characteristicvaluechanged', handleCo2CharacteristicChange);
+            
+            
+            updateTemperature(await characteristicTemperature.readValue());
+            updateHumidity(await characteristicHumidity.readValue());
+            updateAirQuality(await characteristicAirQuality.readValue());
+            updateCo(await sensorCoCharacteristicFound.readValue());
+            updateCo2(await sensorCo2CharacteristicFound.readValue());
+
+            timestampContainer.innerHTML = getDateTime();
+
+            await characteristicTemperature.startNotifications();
+            await characteristicHumidity.startNotifications();
+            await characteristicAirQuality.startNotifications();
+            await sensorCoCharacteristicFound.startNotifications();
+            await sensorCo2CharacteristicFound.startNotifications();
+            console.log("Notifications Started.");
+
+        } catch (error) {
+            console.log('Error:', error);
+        }
+    }
+
+    function updateTemperature(value) {
+        let floatValue = value.getFloat32(0, true /* Little Endian */);
+        //console.log(" getFloat32: ", floatValue);
+        retrievedTemperatureValue.innerHTML = floatValue.toFixed(2);
+    }
+
+    function updateHumidity(value) {
+        let floatValue = value.getFloat32(0, true /* Little Endian */);
+        //console.log(" getFloat32: ", floatValue);
+        retrievedHumidityValue.innerHTML = floatValue.toFixed(2);
+    }
+
+    function updateCo(value) {
+        let floatValue = value.getFloat32(0, true /* Little Endian */);
+        //console.log(" getFloat32: ", floatValue);
+        retrievedCoValue.innerHTML = floatValue.toFixed(2);
+    }
+
+    function updateCo2(value) {
+        let floatValue = value.getFloat32(0, true /* Little Endian */);
+        //console.log(" getFloat32: ", floatValue);
+        retrievedCo2Value.innerHTML = floatValue.toFixed(2);
+    }
+
+    function updateAirQuality(value) {
+        let floatValue = value.getFloat32(0, true /* Little Endian */);
+        //console.log(" getFloat32: ", floatValue);
+        let airQuality = (1.0 - floatValue) * 100.0
+        retrievedAirQualityValue.innerHTML = airQuality.toFixed(2);
+    }
+
+    function onDisconnected(event){
+        console.log('Device Disconnected:', event.target.device.name);
+        bleStateContainer.innerHTML = "Dispositivo desconectado";
+        bleStateContainer.style.color = "#d13a30";
+
+        connectToDevice();
+    }
+
+    function handleTemperatureCharacteristicChange(event) {
+        updateTemperature(event.target.value);
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function handleHumidityCharacteristicChange(event) {
+        updateHumidity(event.target.value);
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function handleAirQualityCharacteristicChange(event) {
+        updateAirQuality(event.target.value);
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function handleCoCharacteristicChange(event) {
+        updateCo(event.target.value);
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function handleCo2CharacteristicChange(event) {
+        updateCo2(event.target.value);
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    async function disconnectDevice() {
+        try {
+            console.log("Disconnect Device.");
+            
+            if (!bleServer || !bleServer.connected) {
+                console.error("Bluetooth is not connected.");
+                window.alert("Bluetooth is not connected.");
+                return;
+            }
+            
+            if (sensorTemperatureCharacteristicFound) {
+                await sensorTemperatureCharacteristicFound.stopNotifications();
+                console.log("Notifications Stopped");
+            } else {
+                console.log("No characteristic found to disconnect.");
+            }
+
+            if (sensorHumidityCharacteristicFound) {
+                await sensorHumidityCharacteristicFound.stopNotifications();
+                console.log("Notifications Stopped");
+            } else {
+                console.log("No characteristic found to disconnect.");
+            }
+
+            if (sensorAirQualityCharacteristicFound) {
+                await sensorAirQualityCharacteristicFound.stopNotifications();
+                console.log("Notifications Stopped");
+            } else {
+                console.log("No characteristic found to disconnect.");
+            }
+            
+            await bleServer.disconnect();
+            console.log("Device Disconnected");
+            
+            bleStateContainer.innerHTML = "Device Disconnected";
+            bleStateContainer.style.color = "#d13a30";
+            
+        } catch (error) {
+            console.log("An error occurred:", error);
+        }
+    }
+
+    function getDateTime() {
+        var currentdate = new Date();
+        var day = ("00" + currentdate.getDate()).slice(-2); // Convert day to string and slice
+        var month = ("00" + (currentdate.getMonth() + 1)).slice(-2);
+        var year = currentdate.getFullYear();
+        var hours = ("00" + currentdate.getHours()).slice(-2);
+        var minutes = ("00" + currentdate.getMinutes()).slice(-2);
+        var seconds = ("00" + currentdate.getSeconds()).slice(-2);
+
+        var datetime = day + "/" + month + "/" + year + " a las " + hours + ":" + minutes + ":" + seconds;
+        return datetime;
+    }
+
+
+</script>
+
+</html>
