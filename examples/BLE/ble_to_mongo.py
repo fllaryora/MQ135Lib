@@ -112,7 +112,7 @@ async def post_in_mongo(sensor):
     #  which will be automatically converted to and from the appropriate BSON types.
     post = {
         "time": datetime.datetime.now(tz=datetime.timezone.utc),
-        "temp": temperature,
+        "temperature": temperature,
         "humidity": humidity,
         "air_quality": air_quality,
         "carbon_monoxide_concentration": carbon_monoxide_concentration,
@@ -122,7 +122,7 @@ async def post_in_mongo(sensor):
         "toluene_concentration": toluene_concentration,
         "amonium_concentration": amonium_concentration,
         "metadata": {
-            "temp": "celcius - °C ",
+            "temperature": "celcius - °C ",
             "humidity": "percentage - %",
             "air_quality": "percentage - %",
             "carbon_monoxide_concentration": "parts per million - ppm",
