@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<body>
+
+    <button onclick="fetchData()">Fetch Environment sample</button><br>
+    
+    <h2>Valores que llegarón:</h2>
+    <p>Temperatura: <span id="temperatureContainer">NaN</span> °C</p>
+    <p>Humedad: <span id="humidityContainer">NaN</span> %</p>
+    <p>Calidad del aire: <span id="airQualityContainer">NaN</span> %</p>
+    <p>Dioxido de Carbono: <span id="co2Container">NaN</span> partes por millon</p>
+    <p>Monoxido de Carbono: <span id="coContainer">NaN</span> partes por millon</p>
+    <p>Ultima Lectura: <span id="timestamp"></span></p>
+    
+    <canvas id="temperatureChart" style="width:100%;max-width:600px"></canvas>
+    <canvas id="humidityChart" style="width:100%;max-width:600px"></canvas>
+    <canvas id="airChart" style="width:100%;max-width:600px"></canvas>
+    <canvas id="ppmChart" style="width:100%;max-width:600px"></canvas>
+    <script src="index2.js"></script>
+</body>
+</html>
